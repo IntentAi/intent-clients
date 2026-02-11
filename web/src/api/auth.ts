@@ -11,24 +11,24 @@
  * - Redirecting to the main app
  */
 
-import { post } from './client';
-import { User } from '../types/user';
+import { post } from './client'
+import { User } from '../types/user'
 
 /**
  * Request body for user registration.
  */
 interface RegisterRequest {
-  username: string;
-  email: string;
-  password: string;
+  username: string
+  email: string
+  password: string
 }
 
 /**
  * Request body for user login.
  */
 interface LoginRequest {
-  username_or_email: string;
-  password: string;
+  username_or_email: string
+  password: string
 }
 
 /**
@@ -36,8 +36,8 @@ interface LoginRequest {
  * Contains the JWT token and the authenticated user object.
  */
 export interface AuthResponse {
-  token: string;
-  user: User;
+  token: string
+  user: User
 }
 
 /**
@@ -75,9 +75,9 @@ export async function register(
     username,
     email,
     password,
-  };
+  }
 
-  return post<AuthResponse>('/auth/register', body);
+  return post<AuthResponse>('/auth/register', body)
 }
 
 /**
@@ -105,11 +105,14 @@ export async function register(
  * }
  * ```
  */
-export async function login(usernameOrEmail: string, password: string): Promise<AuthResponse> {
+export async function login(
+  usernameOrEmail: string,
+  password: string
+): Promise<AuthResponse> {
   const body: LoginRequest = {
     username_or_email: usernameOrEmail,
     password,
-  };
+  }
 
-  return post<AuthResponse>('/auth/login', body);
+  return post<AuthResponse>('/auth/login', body)
 }

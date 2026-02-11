@@ -11,19 +11,19 @@
  */
 export interface User {
   /** Snowflake ID (64-bit integer as string) */
-  id: string;
+  id: string
 
   /** Unique username (lowercase, alphanumeric + underscores) */
-  username: string;
+  username: string
 
   /** Display name (can contain spaces, unicode, etc.) */
-  display_name: string;
+  display_name: string
 
   /** Avatar URL (nullable if user has no avatar) */
-  avatar_url: string | null;
+  avatar_url: string | null
 
   /** Account creation timestamp (ISO 8601) */
-  created_at: string;
+  created_at: string
 }
 
 /**
