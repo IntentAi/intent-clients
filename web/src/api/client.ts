@@ -22,14 +22,11 @@ const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'
 
 /**
- * Placeholder function for retrieving the current auth token.
- * For Phase 1, this returns null. In later phases, this will read from the auth store.
- *
- * The auth store will be implemented in a future issue and will replace this placeholder.
+ * Retrieves the current auth token from localStorage.
+ * This will be replaced with an auth store in a future phase.
  */
 export function getAuthToken(): string | null {
-  // TODO: Replace with actual auth store getter when stores are implemented
-  return null
+  return localStorage.getItem('authToken')
 }
 
 /**
