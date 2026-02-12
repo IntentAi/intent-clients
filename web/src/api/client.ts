@@ -12,23 +12,21 @@
  * This client does NOT manage state - it just makes requests and returns data.
  */
 
-import { ApiError, ApiErrorResponse } from '../types/api';
+import { ApiError, ApiErrorResponse } from '../types/api'
 
 /**
  * Base URL for all API requests.
  * Read from Vite environment variable, defaulting to local development server.
  */
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'
 
 /**
- * Placeholder function for retrieving the current auth token.
- * For Phase 1, this returns null. In later phases, this will read from the auth store.
- *
- * The auth store will be implemented in a future issue and will replace this placeholder.
+ * Retrieves the current auth token from localStorage.
+ * This will be replaced with an auth store in a future phase.
  */
 export function getAuthToken(): string | null {
-  // TODO: Replace with actual auth store getter when stores are implemented
-  return null;
+  return localStorage.getItem('authToken')
 }
 
 /**
@@ -36,49 +34,56 @@ export function getAuthToken(): string | null {
  * Sets Content-Type and Accept headers for JSON communication.
  */
 interface RequestOptions {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  body?: unknown;
-  headers?: Record<string, string>;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+  body?: unknown
+  headers?: Record<string, string>
 }
 
 /**
  * Internal function to make HTTP requests.
  * Handles auth headers, JSON serialization, error parsing, and 401 redirects.
  */
-async function request<T>(endpoint: string, options: RequestOptions): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+async function request<T>(
+  endpoint: string,
+  options: RequestOptions
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`
 
   // Build headers
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
     ...options.headers,
-  };
+  }
 
   // Attach Authorization header if token exists
-  const token = getAuthToken();
+  const token = getAuthToken()
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers['Authorization'] = `Bearer ${token}`
   }
 
   // Build fetch options
   const fetchOptions: RequestInit = {
     method: options.method,
     headers,
-  };
+  }
 
   // Serialize body to JSON if present
   if (options.body !== undefined) {
-    fetchOptions.body = JSON.stringify(options.body);
+    fetchOptions.body = JSON.stringify(options.body)
   }
 
   // Make the request
-  let response: Response;
+  let response: Response
   try {
-    response = await fetch(url, fetchOptions);
-  } catch (error) {
+    response = await fetch(url, fetchOptions)
+  } catch {
     // Network error (no response from server)
-    throw new ApiError(0, 'Network error: Unable to reach the server', 'NETWORK_ERROR');
+    throw new ApiError(
+      0,
+      'Network error: Unable to reach the server',
+      'NETWORK_ERROR'
+    )
   }
 
   // Handle 401 Unauthorized by redirecting to login
@@ -87,28 +92,28 @@ async function request<T>(endpoint: string, options: RequestOptions): Promise<T>
     // TODO: When auth store is implemented, call logout action here
     // For now, just redirect to login page
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      window.location.href = '/login'
     }
-    throw new ApiError(401, 'Authentication required', 'UNAUTHORIZED');
+    throw new ApiError(401, 'Authentication required', 'UNAUTHORIZED')
   }
 
   // Parse response body
-  let responseData: unknown;
+  let responseData: unknown
   try {
     // Empty responses (204 No Content) don't have a body
     if (response.status === 204) {
-      responseData = null;
+      responseData = null
     } else {
-      const text = await response.text();
-      responseData = text ? JSON.parse(text) : null;
+      const text = await response.text()
+      responseData = text ? JSON.parse(text) : null
     }
-  } catch (error) {
+  } catch {
     // Failed to parse JSON response
     throw new ApiError(
       response.status,
       'Invalid JSON response from server',
       'INVALID_RESPONSE'
-    );
+    )
   }
 
   // Handle error responses
@@ -116,19 +121,19 @@ async function request<T>(endpoint: string, options: RequestOptions): Promise<T>
     // Server returned an error response
     // The Intent server returns {error: string, code: string}
     if (isApiErrorResponse(responseData)) {
-      throw new ApiError(response.status, responseData.error, responseData.code);
+      throw new ApiError(response.status, responseData.error, responseData.code)
     } else {
       // Unexpected error format
       throw new ApiError(
         response.status,
         `HTTP ${response.status}: ${response.statusText}`,
         'HTTP_ERROR'
-      );
+      )
     }
   }
 
   // Return the parsed data
-  return responseData as T;
+  return responseData as T
 }
 
 /**
@@ -142,14 +147,17 @@ function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
     'code' in value &&
     typeof (value as ApiErrorResponse).error === 'string' &&
     typeof (value as ApiErrorResponse).code === 'string'
-  );
+  )
 }
 
 /**
  * Make a GET request.
  */
-export async function get<T>(endpoint: string, headers?: Record<string, string>): Promise<T> {
-  return request<T>(endpoint, { method: 'GET', headers });
+export async function get<T>(
+  endpoint: string,
+  headers?: Record<string, string>
+): Promise<T> {
+  return request<T>(endpoint, { method: 'GET', headers })
 }
 
 /**
@@ -160,7 +168,7 @@ export async function post<T>(
   body?: unknown,
   headers?: Record<string, string>
 ): Promise<T> {
-  return request<T>(endpoint, { method: 'POST', body, headers });
+  return request<T>(endpoint, { method: 'POST', body, headers })
 }
 
 /**
@@ -171,7 +179,7 @@ export async function put<T>(
   body?: unknown,
   headers?: Record<string, string>
 ): Promise<T> {
-  return request<T>(endpoint, { method: 'PUT', body, headers });
+  return request<T>(endpoint, { method: 'PUT', body, headers })
 }
 
 /**
@@ -182,7 +190,7 @@ export async function del<T>(
   body?: unknown,
   headers?: Record<string, string>
 ): Promise<T> {
-  return request<T>(endpoint, { method: 'DELETE', body, headers });
+  return request<T>(endpoint, { method: 'DELETE', body, headers })
 }
 
 /**
@@ -193,5 +201,5 @@ export async function patch<T>(
   body?: unknown,
   headers?: Record<string, string>
 ): Promise<T> {
-  return request<T>(endpoint, { method: 'PATCH', body, headers });
+  return request<T>(endpoint, { method: 'PATCH', body, headers })
 }
