@@ -77,7 +77,7 @@ async function request<T>(
   let response: Response
   try {
     response = await fetch(url, fetchOptions)
-  } catch (error) {
+  } catch {
     // Network error (no response from server)
     throw new ApiError(
       0,
@@ -107,7 +107,7 @@ async function request<T>(
       const text = await response.text()
       responseData = text ? JSON.parse(text) : null
     }
-  } catch (error) {
+  } catch {
     // Failed to parse JSON response
     throw new ApiError(
       response.status,

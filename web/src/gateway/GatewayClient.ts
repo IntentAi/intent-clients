@@ -382,7 +382,11 @@ class GatewayClient {
     // Set up heartbeat interval
     this.heartbeatTimer = setInterval(() => {
       // Check if we've missed too many heartbeats
-      if (this.lastHeartbeatSent && !this.lastHeartbeatAck) {
+      // Compare timestamps: if we sent a heartbeat but haven't received ACK
+      if (
+        this.lastHeartbeatSent &&
+        this.lastHeartbeatSent > (this.lastHeartbeatAck || 0)
+      ) {
         this.missedHeartbeats++
         console.warn(
           '[Gateway] Missed heartbeat',

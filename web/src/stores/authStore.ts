@@ -30,6 +30,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true })
     try {
       const response = await authApi.login(usernameOrEmail, password)
+
+      // Persist to localStorage for page refresh
+      localStorage.setItem('authToken', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+
       set({
         token: response.token,
         user: response.user,
@@ -46,6 +51,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true })
     try {
       const response = await authApi.register(username, email, password)
+
+      // Persist to localStorage for page refresh
+      localStorage.setItem('authToken', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+
       set({
         token: response.token,
         user: response.user,
@@ -59,6 +69,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    // Clear localStorage
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('user')
+
     set({
       token: null,
       user: null,

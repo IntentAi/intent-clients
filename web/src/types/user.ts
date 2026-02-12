@@ -28,13 +28,7 @@ export interface User {
 
 /**
  * Current authenticated user.
- * Extends the base User interface with additional fields that are only
- * available for the currently logged-in user.
- *
  * For Phase 1, this is identical to User. Future phases may add fields like
  * email, verified status, premium tier, etc.
  */
-export interface CurrentUser extends User {
-  // Phase 1: No additional fields
-  // Future phases might add: email, verified, premium_tier, etc.
-}
+export type CurrentUser = User
