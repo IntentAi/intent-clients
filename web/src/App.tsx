@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import MainPage from './pages/MainPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('authToken')
@@ -10,14 +11,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>
-}
-
-function HomePage() {
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-gray-900">Intent Client</h1>
-    </div>
-  )
 }
 
 function App() {
@@ -30,7 +23,7 @@ function App() {
           path="/"
           element={
             <ProtectedRoute>
-              <HomePage />
+              <MainPage />
             </ProtectedRoute>
           }
         />
