@@ -1,14 +1,17 @@
-/**
- * Channel sidebar - middle panel showing channels for selected server.
- */
+// channel sidebar - shows channels for selected server
 
+import { useState, useEffect } from 'react'
 import { useServerStore } from '../../stores/serverStore'
 import { useChannelStore } from '../../stores/channelStore'
 import { ChannelType } from '../../types/channel'
+import { getChannels } from '../../api/channels'
+import CreateChannelModal from '../channels/CreateChannelModal'
 
 export default function ChannelSidebar() {
   const { selectedServerId, servers } = useServerStore()
-  const { channelsByServer, selectedChannelId, selectChannel } = useChannelStore()
+  const { channelsByServer, selectedChannelId, selectChannel, setChannels } = useChannelStore()
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const selectedServer = selectedServerId ? servers[selectedServerId] : null
   const channels = selectedServerId
@@ -16,6 +19,28 @@ export default function ChannelSidebar() {
         (a, b) => a.position - b.position,
       )
     : []
+
+  // fetch channels when server is selected
+  useEffect(() => {
+    if (!selectedServerId) return
+
+    // skip if we already have channels for this server
+    if (channelsByServer[selectedServerId]) return
+
+    const fetchServerChannels = async () => {
+      setIsLoading(true)
+      try {
+        const channels = await getChannels(selectedServerId)
+        setChannels(selectedServerId, channels)
+      } catch (err) {
+        console.error('failed to fetch channels:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchServerChannels()
+  }, [selectedServerId, channelsByServer, setChannels])
 
   if (!selectedServer) {
     return (
@@ -42,10 +67,17 @@ export default function ChannelSidebar() {
 
       {/* Channel list */}
       <div className="flex-1 overflow-y-auto py-2">
-        {channels.length === 0 ? (
+        {isLoading ? (
+          <div className="px-4 py-8 text-center">
+            <p className="text-gray-500 text-sm">Loading channels...</p>
+          </div>
+        ) : channels.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-gray-500 text-sm mb-2">No channels yet</p>
-            <button className="text-indigo-400 text-sm hover:underline">
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="text-indigo-400 text-sm hover:underline"
+            >
               Create one
             </button>
           </div>
@@ -149,6 +181,7 @@ export default function ChannelSidebar() {
       {/* Create channel button */}
       <div className="p-2 border-t border-gray-950/50">
         <button
+          onClick={() => setIsCreateModalOpen(true)}
           className="w-full py-2 px-3 rounded bg-gray-800/50 text-gray-300
                      hover:bg-gray-800 hover:text-white transition-colors
                      flex items-center justify-center gap-2 text-sm font-medium"
@@ -164,6 +197,15 @@ export default function ChannelSidebar() {
           Create Channel
         </button>
       </div>
+
+      {/* Create channel modal */}
+      {selectedServerId && (
+        <CreateChannelModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          serverId={selectedServerId}
+        />
+      )}
     </div>
   )
 }
