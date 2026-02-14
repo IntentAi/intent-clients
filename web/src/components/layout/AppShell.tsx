@@ -1,14 +1,20 @@
-/**
- * AppShell - Main 3-panel layout container.
- * The core layout structure for the authenticated app.
- */
+// main 3-panel layout
 
 import ServerSidebar from './ServerSidebar'
 import ChannelSidebar from './ChannelSidebar'
+import MessageList from '../messages/MessageList'
+import MessageInput from '../messages/MessageInput'
 import { useChannelStore } from '../../stores/channelStore'
+import { useServerStore } from '../../stores/serverStore'
 
 export default function AppShell() {
-  const { selectedChannelId } = useChannelStore()
+  const { selectedChannelId, channelsByServer } = useChannelStore()
+  const { selectedServerId } = useServerStore()
+
+  // get selected channel for header
+  const selectedChannel = selectedChannelId && selectedServerId
+    ? channelsByServer[selectedServerId]?.[selectedChannelId]
+    : null
 
   return (
     <div className="h-screen flex bg-gray-950 text-white overflow-hidden">
@@ -27,7 +33,7 @@ export default function AppShell() {
               <div className="flex items-center gap-2">
                 <span className="text-gray-400 text-xl font-light">#</span>
                 <h1 className="font-semibold text-white">
-                  channel-name
+                  {selectedChannel?.name || 'channel'}
                 </h1>
               </div>
               <div className="ml-auto flex items-center gap-3">
@@ -56,47 +62,8 @@ export default function AppShell() {
               </div>
             </div>
 
-            {/* Message area */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {/* Messages will go here (Phase 1 - issue #9) */}
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-600/20 flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-indigo-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-gray-400 text-sm mb-2">
-                    This is the start of your conversation
-                  </p>
-                  <p className="text-gray-500 text-xs">
-                    Messages and chat UI coming in Phase 1
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Message input */}
-            <div className="p-4">
-              <div className="bg-gray-700/50 rounded-lg px-4 py-3 border border-gray-600/30 focus-within:border-indigo-500/50 transition-colors">
-                <input
-                  type="text"
-                  placeholder="Message #channel-name"
-                  className="w-full bg-transparent text-white placeholder-gray-400 outline-none"
-                  disabled
-                />
-              </div>
-            </div>
+            <MessageList />
+            <MessageInput />
           </>
         ) : (
           // No channel selected
