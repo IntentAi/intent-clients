@@ -38,33 +38,30 @@ export default function CreateChannelModal({
 
     setIsLoading(true)
 
-    try {
-      // add temp channel for instant ui feedback
-      const tempChannel: Channel = {
-        id: `temp-${Date.now()}`,
-        server_id: serverId,
-        name: name.trim(),
-        type,
-        topic: null,
-        position: 999,
-        parent_id: null,
-        created_at: new Date().toISOString(),
-      }
-      addChannel(tempChannel)
+    const tempId = `temp-${Date.now()}`
+    const tempChannel: Channel = {
+      id: tempId,
+      server_id: serverId,
+      name: name.trim(),
+      type,
+      topic: null,
+      position: 999,
+      parent_id: null,
+      created_at: new Date().toISOString(),
+    }
 
+    try {
+      addChannel(tempChannel)
       const createdChannel = await createChannel(serverId, name.trim(), type)
 
-      // swap temp with real channel
       const { removeChannel } = useChannelStore.getState()
-      removeChannel(serverId, tempChannel.id)
+      removeChannel(serverId, tempId)
       addChannel(createdChannel)
 
       setName('')
       setType(ChannelType.TEXT)
       onClose()
     } catch (err) {
-      // remove temp channel if creation failed
-      const tempId = `temp-${Date.now()}`
       const { removeChannel } = useChannelStore.getState()
       removeChannel(serverId, tempId)
 

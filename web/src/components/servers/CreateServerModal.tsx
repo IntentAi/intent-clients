@@ -32,30 +32,27 @@ export default function CreateServerModal({ isOpen, onClose }: CreateServerModal
 
     setIsLoading(true)
 
-    try {
-      // add temp server for instant ui feedback
-      const tempServer: Server = {
-        id: `temp-${Date.now()}`,
-        name: name.trim(),
-        icon_url: null,
-        owner_id: 'temp',
-        member_count: 1,
-        created_at: new Date().toISOString(),
-      }
-      addServer(tempServer)
+    const tempId = `temp-${Date.now()}`
+    const tempServer: Server = {
+      id: tempId,
+      name: name.trim(),
+      icon_url: null,
+      owner_id: 'temp',
+      member_count: 1,
+      created_at: new Date().toISOString(),
+    }
 
+    try {
+      addServer(tempServer)
       const createdServer = await createServer(name.trim())
 
-      // swap temp with real server
       const { removeServer } = useServerStore.getState()
-      removeServer(tempServer.id)
+      removeServer(tempId)
       addServer(createdServer)
 
       setName('')
       onClose()
     } catch (err) {
-      // remove temp server if creation failed
-      const tempId = `temp-${Date.now()}`
       const { removeServer } = useServerStore.getState()
       removeServer(tempId)
 

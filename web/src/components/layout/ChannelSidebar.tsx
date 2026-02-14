@@ -23,23 +23,31 @@ export default function ChannelSidebar() {
   // fetch channels when server is selected
   useEffect(() => {
     if (!selectedServerId) return
-
-    // skip if we already have channels for this server
     if (channelsByServer[selectedServerId]) return
 
+    let cancelled = false
     const fetchServerChannels = async () => {
       setIsLoading(true)
       try {
         const channels = await getChannels(selectedServerId)
-        setChannels(selectedServerId, channels)
+        if (!cancelled) {
+          setChannels(selectedServerId, channels)
+        }
       } catch (err) {
-        console.error('failed to fetch channels:', err)
+        if (!cancelled) {
+          console.error('failed to fetch channels:', err)
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchServerChannels()
+    return () => {
+      cancelled = true
+    }
   }, [selectedServerId, channelsByServer, setChannels])
 
   if (!selectedServer) {

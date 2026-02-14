@@ -21,27 +21,35 @@ export default function MessageList() {
   useEffect(() => {
     if (!selectedChannelId) return
 
-    // skip if we already have messages for this channel
     if (messagesByChannel[selectedChannelId]) {
       scrollToBottom()
       return
     }
 
+    let cancelled = false
     const fetchMessages = async () => {
       setIsLoading(true)
       try {
         const fetchedMessages = await getMessages(selectedChannelId)
-        setMessages(selectedChannelId, fetchedMessages)
-        // scroll to bottom after messages load
-        setTimeout(() => scrollToBottom(), 100)
+        if (!cancelled) {
+          setMessages(selectedChannelId, fetchedMessages)
+          setTimeout(() => scrollToBottom(), 100)
+        }
       } catch (err) {
-        console.error('failed to fetch messages:', err)
+        if (!cancelled) {
+          console.error('failed to fetch messages:', err)
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchMessages()
+    return () => {
+      cancelled = true
+    }
   }, [selectedChannelId, messagesByChannel, setMessages])
 
   // auto-scroll on new messages

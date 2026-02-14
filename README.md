@@ -1,113 +1,61 @@
 # Intent Clients
 
-Official clients for Intent - Desktop, Web, and Mobile.
+Official clients for Intent - open source chat platform.
 
-## Status
-
-**Phase 1 Development (In Progress)** - Building web client foundation.
-
-### Web Client Progress
-- ✅ WebSocket Gateway (MessagePack protocol)
-- ✅ Authentication (login/register)
-- ✅ Zustand state management
-- ✅ 3-panel Discord-style layout
-- 🔄 Server/Channel/Message APIs (next)
-- 🔄 Real-time event handling
-- ⏳ End-to-end testing
-
-## Clients
-
-### Web (Active Development)
-- **Tech**: React 18 + TypeScript + Vite + Zustand + Tailwind
-- **Protocol**: REST API + WebSocket Gateway (MessagePack)
-- **Deployment**: Self-hostable + hosted at app.intent.chat
-- **Status**: Phase 1 (core features in progress)
-
-### Desktop (Tauri)
-- **Tech**: Rust + Tauri + native webview (shares web frontend)
-- **Target RAM**: <80MB idle
-- **Platforms**: Windows, macOS, Linux
-- **Status**: Phase 5 (after web MVP)
-
-### Mobile
-- **iOS**: Native Swift
-- **Android**: Native Kotlin
-- **Status**: Phase 2+ (after desktop/web)
-
-## Architecture
-
-```
-intent-clients/
-├── web/          # Web client (React + TypeScript)
-│   ├── src/
-│   │   ├── api/          # REST API client
-│   │   ├── gateway/      # WebSocket + MessagePack
-│   │   ├── stores/       # Zustand state management
-│   │   ├── components/   # React components
-│   │   │   └── layout/   # 3-panel app shell
-│   │   ├── pages/        # Route pages
-│   │   └── types/        # TypeScript definitions
-│   └── package.json
-├── desktop/      # Tauri application (Phase 5)
-├── mobile/       # Mobile apps (Phase 2+)
-└── shared/       # Shared libs (Phase 3+)
-```
-
-## Development
+## Setup
 
 ### Prerequisites
 - Node.js 18+
-- npm or yarn
+- Running Intent server (local or remote)
 
-### Web Client Setup
+### Install
 
 ```bash
 cd web
 npm install
-```
-
-### Running Development Server
-
-```bash
-npm run dev
-# Opens at http://localhost:5173
-```
-
-**Note:** Requires a running Intent server. Set `VITE_API_URL` and `VITE_GATEWAY_URL` in `.env`:
-
-```bash
 cp .env.example .env
 # Edit .env with your server URLs
 ```
 
-### Building for Production
+### Development
 
 ```bash
-npm run build
-# Output in web/dist/
+npm run dev        # Start dev server at localhost:5173
+npm run build      # Build for production
+npm run lint       # Run linter
 ```
 
-### Code Quality
+## Architecture
 
-```bash
-npm run lint      # ESLint
-npm run format    # Prettier
+```
+web/src/
+├── api/          # REST API client layer
+├── gateway/      # WebSocket (MessagePack protocol)
+├── stores/       # Zustand state management
+├── components/   # React components
+├── pages/        # Route pages
+└── types/        # TypeScript definitions
 ```
 
-## Tech Stack (Web)
+## Tech Stack
 
-- **Framework**: React 18 with TypeScript
-- **Bundler**: Vite
-- **State**: Zustand (normalized stores)
-- **Styling**: Tailwind CSS
-- **Routing**: React Router v6
-- **Protocol**: MessagePack over WebSocket
-- **API**: Native fetch with typed wrappers
+- React 18 + TypeScript + Vite
+- Zustand for state management
+- Tailwind CSS for styling
+- React Router v6
+- MessagePack over WebSocket
+- Native fetch API
+
+## Clients
+
+**Web** - React SPA (active development)
+**Desktop** - Tauri wrapper (phase 5)
+**Mobile** - Native iOS/Android (phase 2+)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-MIT License - See [LICENSE](LICENSE)
+MIT

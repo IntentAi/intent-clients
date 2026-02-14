@@ -27,41 +27,37 @@ export default function MessageInput() {
     setContent('')
     setIsSending(true)
 
-    // reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
 
-    try {
-      // optimistic update with temp message
-      const tempMessage: Message = {
-        id: `temp-${Date.now()}`,
-        channel_id: selectedChannelId,
-        author: {
-          id: 'temp',
-          username: 'You',
-          display_name: 'You',
-          avatar_url: null,
-          created_at: new Date().toISOString(),
-        },
-        content: messageContent,
+    const tempId = `temp-${Date.now()}`
+    const tempMessage: Message = {
+      id: tempId,
+      channel_id: selectedChannelId,
+      author: {
+        id: 'temp',
+        username: 'You',
+        display_name: 'You',
+        avatar_url: null,
         created_at: new Date().toISOString(),
-        edited_at: null,
-      }
-      addMessage(tempMessage)
+      },
+      content: messageContent,
+      created_at: new Date().toISOString(),
+      edited_at: null,
+    }
 
+    try {
+      addMessage(tempMessage)
       const sentMessage = await sendMessage(selectedChannelId, messageContent)
 
-      // replace temp with real message
       const { removeMessage } = useMessageStore.getState()
-      removeMessage(selectedChannelId, tempMessage.id)
+      removeMessage(selectedChannelId, tempId)
       addMessage(sentMessage)
     } catch (err) {
       console.error('failed to send message:', err)
-      // remove temp message on error
       const { removeMessage } = useMessageStore.getState()
-      removeMessage(selectedChannelId, `temp-${Date.now()}`)
-      // restore content so user can retry
+      removeMessage(selectedChannelId, tempId)
       setContent(messageContent)
     } finally {
       setIsSending(false)
