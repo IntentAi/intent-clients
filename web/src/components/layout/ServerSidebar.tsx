@@ -3,11 +3,15 @@
  * Displays vertical list of servers the user belongs to.
  */
 
+import { useState } from 'react'
 import { useServerStore } from '../../stores/serverStore'
+import ServerIcon from '../servers/ServerIcon'
+import CreateServerModal from '../servers/CreateServerModal'
 
 export default function ServerSidebar() {
   const { servers, selectedServerId, selectServer } = useServerStore()
   const serverList = Object.values(servers)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   return (
     <div className="w-[72px] bg-gray-950 flex flex-col items-center py-3 gap-2">
@@ -40,43 +44,18 @@ export default function ServerSidebar() {
       {/* Server list */}
       <div className="flex flex-col gap-2 overflow-y-auto flex-1 scrollbar-hide">
         {serverList.map((server) => (
-          <button
+          <ServerIcon
             key={server.id}
+            server={server}
+            isSelected={selectedServerId === server.id}
             onClick={() => selectServer(server.id)}
-            className={`
-              w-12 h-12 rounded-2xl flex items-center justify-center
-              transition-all duration-200 group relative
-              ${
-                selectedServerId === server.id
-                  ? 'rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                  : 'bg-gray-800 text-gray-300 hover:bg-indigo-600 hover:text-white hover:rounded-xl hover:shadow-lg hover:shadow-indigo-500/30'
-              }
-            `}
-            title={server.name}
-          >
-            {/* Server icon or initial */}
-            {server.icon_url ? (
-              <img
-                src={server.icon_url}
-                alt={server.name}
-                className="w-full h-full object-cover rounded-2xl group-hover:rounded-xl transition-all duration-200"
-              />
-            ) : (
-              <span className="text-lg font-semibold">
-                {server.name.charAt(0).toUpperCase()}
-              </span>
-            )}
-
-            {/* Active indicator */}
-            {selectedServerId === server.id && (
-              <div className="absolute -left-3 w-1 h-8 bg-white rounded-r-full" />
-            )}
-          </button>
+          />
         ))}
       </div>
 
       {/* Add server button */}
       <button
+        onClick={() => setIsCreateModalOpen(true)}
         className="w-12 h-12 rounded-2xl bg-gray-800 text-green-400
                    flex items-center justify-center text-2xl font-light
                    hover:bg-green-600 hover:text-white hover:rounded-xl
@@ -85,6 +64,12 @@ export default function ServerSidebar() {
       >
         +
       </button>
+
+      {/* Create server modal */}
+      <CreateServerModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   )
 }

@@ -5,6 +5,7 @@
 
 import { create } from 'zustand'
 import type { Server } from '../types/server'
+import { gatewayClient, SERVER_CREATE } from '../gateway'
 
 interface ServerState {
   servers: Record<string, Server>
@@ -75,3 +76,26 @@ export const useServerStore = create<ServerState>((set, get) => ({
     return Object.values(get().servers)
   },
 }))
+
+// handle SERVER_CREATE events from gateway
+gatewayClient.on<{ server: Server }>(SERVER_CREATE, (payload) => {
+  const { addServer, getServer } = useServerStore.getState()
+  const existingServer = getServer(payload.server.id)
+
+  // skip if we already have it from optimistic update
+  if (existingServer) {
+    console.log('[ServerStore] SERVER_CREATE: already exists, skipping')
+    return
+  }
+
+  // new server (probably invited to it)
+  console.log('[ServerStore] SERVER_CREATE: adding', payload.server.name)
+  addServer(payload.server)
+})
+
+// populate servers from READY event on connect
+gatewayClient.on<{ servers: Server[] }>('READY', (payload) => {
+  const { setServers } = useServerStore.getState()
+  console.log('[ServerStore] READY: got', payload.servers.length, 'servers')
+  setServers(payload.servers)
+})

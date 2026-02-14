@@ -1,11 +1,8 @@
-/**
- * Message store.
- * Manages messages per channel with pagination support.
- * Data is normalized: messages grouped by channel ID.
- */
+// message store - manages messages per channel with pagination
 
 import { create } from 'zustand'
 import type { Message } from '../types/message'
+import { gatewayClient, MESSAGE_CREATE, MESSAGE_UPDATE, MESSAGE_DELETE } from '../gateway'
 
 interface MessageState {
   // Messages grouped by channel ID: { channelId: { messageId: Message } }
@@ -190,3 +187,32 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     return get().hasReachedStart[channelId] || false
   },
 }))
+
+// handle MESSAGE_CREATE events from gateway
+gatewayClient.on<{ message: Message }>(MESSAGE_CREATE, (payload) => {
+  const { addMessage, messagesByChannel } = useMessageStore.getState()
+  const channelMessages = messagesByChannel[payload.message.channel_id]
+
+  // skip if we already have this message (from optimistic update)
+  if (channelMessages && channelMessages[payload.message.id]) {
+    console.log('[MessageStore] MESSAGE_CREATE: already exists, skipping')
+    return
+  }
+
+  console.log('[MessageStore] MESSAGE_CREATE: adding message to', payload.message.channel_id)
+  addMessage(payload.message)
+})
+
+// handle MESSAGE_UPDATE events
+gatewayClient.on<{ message: Message }>(MESSAGE_UPDATE, (payload) => {
+  const { updateMessage } = useMessageStore.getState()
+  console.log('[MessageStore] MESSAGE_UPDATE: updating message', payload.message.id)
+  updateMessage(payload.message.channel_id, payload.message.id, payload.message)
+})
+
+// handle MESSAGE_DELETE events
+gatewayClient.on<{ id: string; channel_id: string }>(MESSAGE_DELETE, (payload) => {
+  const { removeMessage } = useMessageStore.getState()
+  console.log('[MessageStore] MESSAGE_DELETE: removing message', payload.id)
+  removeMessage(payload.channel_id, payload.id)
+})

@@ -1,11 +1,8 @@
-/**
- * Channel store.
- * Manages channels per server and current channel selection.
- * Data is normalized: channels grouped by server ID.
- */
+// channel store - manages channels per server
 
 import { create } from 'zustand'
 import type { Channel } from '../types/channel'
+import { gatewayClient, CHANNEL_CREATE } from '../gateway'
 
 interface ChannelState {
   // Channels grouped by server ID: { serverId: { channelId: Channel } }
@@ -103,3 +100,19 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
     return Object.values(serverChannels).sort((a, b) => a.position - b.position)
   },
 }))
+
+// handle CHANNEL_CREATE events from gateway
+gatewayClient.on<{ channel: Channel }>(CHANNEL_CREATE, (payload) => {
+  const { addChannel, getChannel } = useChannelStore.getState()
+  const existingChannel = getChannel(payload.channel.server_id, payload.channel.id)
+
+  // skip if we already have it from optimistic update
+  if (existingChannel) {
+    console.log('[ChannelStore] CHANNEL_CREATE: already exists, skipping')
+    return
+  }
+
+  // new channel (probably created by someone else)
+  console.log('[ChannelStore] CHANNEL_CREATE: adding', payload.channel.name)
+  addChannel(payload.channel)
+})
