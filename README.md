@@ -1,56 +1,52 @@
 # Intent Clients
 
-Official clients for Intent - open source chat platform.
+Official clients for [Intent](https://github.com/IntentAi/intent) — open-source, privacy-first chat platform.
 
 ## Setup
-
-### Prerequisites
-- Node.js 18+
-- Running Intent server (local or remote)
-
-### Install
 
 ```bash
 cd web
 npm install
-cp .env.example .env
-# Edit .env with your server URLs
+cp .env.example .env    # configure your Intent server URLs
+npm run dev             # localhost:5173
 ```
 
-### Development
+Requires Node.js 18+ and a running Intent server.
+
+## Commands
 
 ```bash
-npm run dev        # Start dev server at localhost:5173
-npm run build      # Build for production
-npm run lint       # Run linter
+npm run dev        # dev server
+npm run build      # production build
+npm run lint       # eslint
 ```
 
 ## Architecture
 
 ```
 web/src/
-├── api/          # REST API client layer
-├── gateway/      # WebSocket (MessagePack protocol)
-├── stores/       # Zustand state management
-├── components/   # React components
-├── pages/        # Route pages
-└── types/        # TypeScript definitions
+  api/          REST client layer
+  gateway/      WebSocket (MessagePack binary protocol)
+  stores/       Zustand state management
+  components/   React components
+  pages/        Route pages
+  types/        TypeScript definitions
 ```
 
-## Tech Stack
+## Stack
 
-- React 18 + TypeScript + Vite
-- Zustand for state management
-- Tailwind CSS for styling
-- React Router v6
+- React 19 + TypeScript + Vite
+- Zustand for state
+- Tailwind CSS
+- React Router v7
 - MessagePack over WebSocket
-- Native fetch API
 
 ## Clients
 
-**Web** - React SPA (active development)
-**Desktop** - Tauri wrapper (phase 5)
-**Mobile** - Native iOS/Android (phase 2+)
+| Client | Status |
+|--------|--------|
+| Web | Active development |
+| Desktop (Tauri) | Planned |
 
 ## Contributing
 

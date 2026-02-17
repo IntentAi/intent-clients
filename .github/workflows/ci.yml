@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - "web/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Bundle size
+        run: |
+          echo "## Bundle size" >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Assets" >> $GITHUB_STEP_SUMMARY
+          find dist/assets -type f -printf '%s %p\n' | sort -rn | head -20 | awk '{printf "- %s: %.1fKB\n", $2, $1/1024}' >> $GITHUB_STEP_SUMMARY

@@ -1,78 +1,57 @@
-# Contributing
+# Contributing to Intent Clients
 
-## Setup
+Before you write any code, take a few minutes to read through this.
+
+## Pick an Issue
+
+Check [GitHub Issues](https://github.com/IntentAi/intent-clients/issues). Look at the **blocking relationships** on the right side of each issue — if something is blocked, that dependency needs to land first. Find something open and unblocked, leave a comment to claim it, and wait for assignment.
+
+## Branching
+
+Work is organized into phases, each with its own branch. Check the repo for the current phase branch or ask a maintainer.
+
+- `main` is protected. Never push directly.
+- `dev` is the long-term integration branch.
+- Your branch comes off the current phase branch: `<phase>/<issue>-description`
+
+```
+git checkout <phase-branch> && git pull origin <phase-branch>
+git checkout -b <phase-branch>/13-invite-flow
+```
+
+No active phase branch? Use `feat/<issue>-description` off `dev`.
+
+## Pull Requests
+
+PR against the **phase branch**, not dev or main. Include what the change does, reference the issue (`Closes #13`), and add screenshots for UI changes.
+
+## Before You Commit
 
 ```bash
-cd web
-npm install
-cp .env.example .env  # Configure your Intent server URLs
-npm run dev           # Start dev server
+npm run build     # no type errors
+npm run lint      # no warnings
 ```
 
-## Standards
+Both must pass. Don't push a broken build.
 
-### TypeScript
-- Strict mode (no `any` types)
-- All API responses must be typed
-- Interfaces for data shapes
+## Commits
 
-### React
-- Functional components with hooks
-- Zustand for state (not Context/Redux)
-- Components stay focused and single-purpose
+Conventional commits, reference the issue, keep them atomic. Explain what changed and why.
 
-### Styling
-- Tailwind CSS only
-- Dark theme: grays (950/900/800/700) + indigo/purple
-- No custom CSS files
-
-### State
-- Normalized stores (keyed by ID)
-- Stores handle API responses and gateway events
-- No business logic in components
-
-## Workflow
-
-### Branching
-- `main` - protected
-- `dev` - integration branch
-- Feature: `feat/<issue>-description`
-- Bug fix: `fix/<issue>-description`
-
-### Commits
 ```
-feat(servers): add creation modal [refs #7]
+feat(invites): wire up invite modal to server API [refs #13]
 
-Built modal with name input and validation.
+Added invite dialog that calls POST /servers/:id/invites and
+copies the generated link. Expiry defaults to 7 days.
 ```
 
-Use conventional commits, reference issues, keep atomic.
+## Code Standards
 
-### Before Committing
-```bash
-npm run build     # Must pass
-npm run lint      # 0 errors, 0 warnings
-```
-
-### Pull Requests
-1. Push to feature branch
-2. PR against `dev` (not main)
-3. Include description
-4. Wait for review
-
-## Architecture
-
-- **Zustand** - Lightweight, TypeScript-native state
-- **MessagePack** - Smaller payloads than JSON
-- **Tailwind** - Co-located styling, no drift
-- **Vite** - Fast bundler
-- **No Electron** - Tauri uses native webview (<80MB)
-- **No SSR** - Static SPA only
-
-## Performance Targets
-
-- Desktop idle: <80MB RAM
-- Bundle: Keep minimal, tree-shake aggressively
+- **TypeScript** strict mode, no `any`. All API responses typed.
+- **React** functional components with hooks. Keep components focused.
+- **Zustand** stores normalized by ID. No business logic in components.
+- **Tailwind** only. Dark theme: grays (950/900/800/700), indigo/purple accents. No CSS files.
+- Comment the **why**, not the what.
 
 ## License
 
