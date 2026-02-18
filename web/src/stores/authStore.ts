@@ -6,6 +6,7 @@
 import { create } from 'zustand'
 import type { CurrentUser } from '../types/user'
 import * as authApi from '../api/auth'
+import { gatewayClient } from '../gateway'
 
 interface AuthState {
   token: string | null
@@ -45,6 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       })
+      gatewayClient.connect()
     } catch (error) {
       set({ isLoading: false })
       throw error
@@ -66,6 +68,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       })
+      gatewayClient.connect()
     } catch (error) {
       set({ isLoading: false })
       throw error
@@ -73,6 +76,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    gatewayClient.disconnect()
     // Clear localStorage
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
@@ -92,3 +96,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user })
   },
 }))
+
+// reconnect gateway when session is hydrated from localStorage on page load
+if (storedToken) {
+  gatewayClient.connect()
+}
