@@ -20,10 +20,14 @@ interface AuthState {
   setUser: (user: CurrentUser | null) => void
 }
 
+// Hydrate from localStorage so auth survives page refresh
+const storedToken = localStorage.getItem('authToken')
+const storedUser = JSON.parse(localStorage.getItem('user') || 'null') as CurrentUser | null
+
 export const useAuthStore = create<AuthState>((set) => ({
-  token: null,
-  user: null,
-  isAuthenticated: false,
+  token: storedToken,
+  user: storedUser,
+  isAuthenticated: !!storedToken,
   isLoading: false,
 
   login: async (usernameOrEmail: string, password: string) => {
