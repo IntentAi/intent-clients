@@ -6,6 +6,7 @@ import { useChannelStore } from '../../stores/channelStore'
 import { ChannelType } from '../../types/channel'
 import { getChannels } from '../../api/channels'
 import CreateChannelModal from '../channels/CreateChannelModal'
+import UserBar from '../user/UserBar'
 
 export default function ChannelSidebar() {
   const { selectedServerId, servers } = useServerStore()
@@ -205,6 +206,9 @@ export default function ChannelSidebar() {
           Create Channel
         </button>
       </div>
+
+      {/* User bar */}
+      <UserBar />
 
       {/* Create channel modal */}
       {selectedServerId && (
