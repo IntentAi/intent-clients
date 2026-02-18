@@ -11,7 +11,7 @@
  * - Redirecting to the main app
  */
 
-import { post } from './client'
+import { post, patch } from './client'
 import { User } from '../types/user'
 
 /**
@@ -115,4 +115,12 @@ export async function login(
   }
 
   return post<AuthResponse>('/auth/login', body)
+}
+
+export async function logout(): Promise<void> {
+  return post('/auth/logout')
+}
+
+export async function updateProfile(data: { display_name?: string }): Promise<User> {
+  return patch<User>('/users/@me', data)
 }
