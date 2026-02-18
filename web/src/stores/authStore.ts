@@ -21,9 +21,19 @@ interface AuthState {
   setUser: (user: CurrentUser | null) => void
 }
 
-// Hydrate from localStorage so auth survives page refresh
-const storedToken = localStorage.getItem('authToken')
-const storedUser = JSON.parse(localStorage.getItem('user') || 'null') as CurrentUser | null
+// Hydrate from localStorage so auth survives page refresh.
+// Both values are parsed together so corrupted user data also invalidates the token,
+// landing the user on the login screen instead of a broken authenticated state.
+let storedToken: string | null = localStorage.getItem('authToken')
+let storedUser: CurrentUser | null = null
+try {
+  storedUser = JSON.parse(localStorage.getItem('user') || 'null') as CurrentUser | null
+} catch {
+  // corrupted storage — drop everything so the user lands on login clean
+  storedToken = null
+  localStorage.removeItem('authToken')
+  localStorage.removeItem('user')
+}
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: storedToken,
