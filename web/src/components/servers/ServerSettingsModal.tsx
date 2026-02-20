@@ -133,7 +133,10 @@ export default function ServerSettingsModal({
             {isOwner ? (
               <button
                 type="button"
-                onClick={() => setConfirmDelete(true)}
+                onClick={() => {
+                  setConfirmDelete(true)
+                  setError(null)
+                }}
                 disabled={isLoading}
                 className="px-3 py-2 text-sm font-medium text-red-400 hover:text-red-300
                          hover:bg-red-500/10 rounded transition-colors
