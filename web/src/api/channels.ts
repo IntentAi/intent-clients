@@ -1,6 +1,6 @@
 // channel api functions
 
-import { post, get } from './client'
+import { post, get, patch, del } from './client'
 import type { Channel, ChannelType } from '../types/channel'
 
 interface CreateChannelRequest {
@@ -28,4 +28,15 @@ export async function getChannels(serverId: string): Promise<Channel[]> {
   return response.channels
 }
 
-// TODO: getChannel(channelId), deleteChannel(channelId) - add when we need channel settings
+// PATCH /channels/:channelId - update channel name/topic/position
+export async function updateChannel(
+  channelId: string,
+  updates: { name?: string; topic?: string; position?: number },
+): Promise<Channel> {
+  return patch<Channel>(`/channels/${channelId}`, updates)
+}
+
+// DELETE /channels/:channelId - delete a channel
+export async function deleteChannel(channelId: string): Promise<void> {
+  await del(`/channels/${channelId}`)
+}

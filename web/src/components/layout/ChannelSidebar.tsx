@@ -3,15 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useServerStore } from '../../stores/serverStore'
 import { useChannelStore } from '../../stores/channelStore'
-import { ChannelType } from '../../types/channel'
+import { ChannelType, type Channel } from '../../types/channel'
 import { getChannels } from '../../api/channels'
 import CreateChannelModal from '../channels/CreateChannelModal'
+import ChannelSettingsModal from '../channels/ChannelSettingsModal'
+import ServerSettingsModal from '../servers/ServerSettingsModal'
 import UserBar from '../user/UserBar'
 
 export default function ChannelSidebar() {
   const { selectedServerId, servers } = useServerStore()
   const { channelsByServer, selectedChannelId, selectChannel, setChannels } = useChannelStore()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isServerSettingsOpen, setIsServerSettingsOpen] = useState(false)
+  const [settingsChannel, setSettingsChannel] = useState<Channel | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const selectedServer = selectedServerId ? servers[selectedServerId] : null
@@ -66,10 +70,15 @@ export default function ChannelSidebar() {
         <h2 className="font-semibold text-white truncate">{selectedServer.name}</h2>
         <button
           className="ml-auto text-gray-400 hover:text-white transition-colors"
-          title="Server menu"
+          title="Server settings"
+          onClick={() => setIsServerSettingsOpen(true)}
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+            <path
+              fillRule="evenodd"
+              d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+              clipRule="evenodd"
+            />
           </svg>
         </button>
       </div>
@@ -164,10 +173,14 @@ export default function ChannelSidebar() {
                       tabIndex={0}
                       className="p-1 hover:bg-gray-700 rounded cursor-pointer"
                       title="Settings"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSettingsChannel(channel)
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.stopPropagation()
+                          setSettingsChannel(channel)
                         }
                       }}
                     >
@@ -216,6 +229,25 @@ export default function ChannelSidebar() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           serverId={selectedServerId}
+        />
+      )}
+
+      {/* Server settings modal */}
+      {selectedServer && (
+        <ServerSettingsModal
+          key={selectedServer.id}
+          isOpen={isServerSettingsOpen}
+          onClose={() => setIsServerSettingsOpen(false)}
+          server={selectedServer}
+        />
+      )}
+
+      {/* Channel settings modal */}
+      {settingsChannel && (
+        <ChannelSettingsModal
+          isOpen={!!settingsChannel}
+          onClose={() => setSettingsChannel(null)}
+          channel={settingsChannel}
         />
       )}
     </div>

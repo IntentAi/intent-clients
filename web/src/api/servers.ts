@@ -1,6 +1,6 @@
 // server api functions
 
-import { post, get } from './client'
+import { post, get, patch, del } from './client'
 import type { Server } from '../types/server'
 
 interface CreateServerRequest {
@@ -25,4 +25,15 @@ export async function getServers(): Promise<Server[]> {
   return response.servers
 }
 
-// TODO: getServer, deleteServer, updateServer - add these when we need server settings
+// PATCH /servers/:serverId - update server name/description
+export async function updateServer(
+  serverId: string,
+  updates: { name?: string; description?: string },
+): Promise<Server> {
+  return patch<Server>(`/servers/${serverId}`, updates)
+}
+
+// DELETE /servers/:serverId - delete a server (owner only)
+export async function deleteServer(serverId: string): Promise<void> {
+  await del(`/servers/${serverId}`)
+}
