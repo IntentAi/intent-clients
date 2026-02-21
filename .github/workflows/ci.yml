@@ -1,12 +1,16 @@
 name: CI
 
 on:
+  push:
+    branches: [dev]
+    paths: ["web/**"]
   pull_request:
-    paths:
-      - "web/**"
+    branches: [dev]
+    paths: ["web/**"]
 
 jobs:
   build:
+    name: Lint, Typecheck & Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,8 +30,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Typecheck
+        run: npx tsc --noEmit
+
       - name: Build
-        run: npm run build
+        run: npx vite build
 
       - name: Bundle size
         run: |
