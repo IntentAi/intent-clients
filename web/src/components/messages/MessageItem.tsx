@@ -1,7 +1,10 @@
-// single message display with avatar, author, and timestamp
+// single message display with avatar, author, timestamp, edit/delete actions
 
+import { useState, useRef, useEffect } from 'react'
 import type { Message } from '../../types/message'
 import { useAuthStore } from '../../stores/authStore'
+import { useMessageStore } from '../../stores/messageStore'
+import { editMessage, deleteMessage } from '../../api/messages'
 
 interface MessageItemProps {
   message: Message
@@ -11,6 +14,26 @@ interface MessageItemProps {
 export default function MessageItem({ message, isGrouped }: MessageItemProps) {
   const currentUser = useAuthStore((s) => s.user)
   const isOwnMessage = currentUser?.id === message.author.id
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(message.content)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const editRef = useRef<HTMLTextAreaElement>(null)
+
+  // auto-focus and auto-resize textarea when entering edit mode
+  useEffect(() => {
+    if (isEditing && editRef.current) {
+      const ta = editRef.current
+      ta.focus()
+      ta.setSelectionRange(ta.value.length, ta.value.length)
+      ta.style.height = 'auto'
+      ta.style.height = ta.scrollHeight + 'px'
+    }
+  }, [isEditing])
 
   // format timestamp as "Today at 3:42 PM" or "Yesterday at 10:15 AM"
   const formatTime = (timestamp: string) => {
@@ -38,11 +61,146 @@ export default function MessageItem({ message, isGrouped }: MessageItemProps) {
     }) + ` at ${timeStr}`
   }
 
-  // hover action bar - edit and delete for own messages
-  const actionBar = isOwnMessage ? (
+  const startEdit = () => {
+    setEditContent(message.content)
+    setEditError(null)
+    setIsEditing(true)
+    setConfirmingDelete(false)
+  }
+
+  const cancelEdit = () => {
+    setIsEditing(false)
+    setEditContent(message.content)
+    setEditError(null)
+  }
+
+  const handleSaveEdit = async () => {
+    const trimmed = editContent.trim()
+    if (!trimmed) {
+      setEditError('Message cannot be empty')
+      return
+    }
+    if (trimmed === message.content) {
+      cancelEdit()
+      return
+    }
+
+    setIsSaving(true)
+    setEditError(null)
+    try {
+      const updated = await editMessage(message.id, trimmed)
+      useMessageStore.getState().updateMessage(message.channel_id, message.id, updated)
+      setIsEditing(false)
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to edit message')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      cancelEdit()
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSaveEdit()
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteMessage(message.id)
+      useMessageStore.getState().removeMessage(message.channel_id, message.id)
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete message')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // edit textarea replaces message content
+  const editArea = (
+    <div className="space-y-1">
+      <textarea
+        ref={editRef}
+        value={editContent}
+        onChange={(e) => {
+          setEditContent(e.target.value)
+          e.target.style.height = 'auto'
+          e.target.style.height = e.target.scrollHeight + 'px'
+        }}
+        onKeyDown={handleEditKeyDown}
+        disabled={isSaving}
+        rows={1}
+        className="w-full px-3 py-1.5 bg-gray-900 border border-gray-600 rounded
+                   text-gray-200 text-sm resize-none leading-relaxed
+                   focus:outline-none focus:border-indigo-500
+                   disabled:opacity-50"
+      />
+      {editError && (
+        <p className="text-xs text-red-400">{editError}</p>
+      )}
+      <p className="text-xs text-gray-500">
+        escape to{' '}
+        <button
+          onClick={cancelEdit}
+          className="text-indigo-400 hover:underline"
+          disabled={isSaving}
+        >
+          cancel
+        </button>
+        {' '}&middot; enter to{' '}
+        <button
+          onClick={handleSaveEdit}
+          className="text-indigo-400 hover:underline"
+          disabled={isSaving}
+        >
+          save
+        </button>
+      </p>
+    </div>
+  )
+
+  // inline delete confirmation
+  const deleteConfirm = (
+    <div className="mt-1 space-y-1">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-red-400">Delete this message?</span>
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700
+                     transition-colors disabled:opacity-50"
+        >
+          {isDeleting ? 'Deleting...' : 'Delete'}
+        </button>
+        <button
+          onClick={() => {
+            setConfirmingDelete(false)
+            setDeleteError(null)
+          }}
+          disabled={isDeleting}
+          className="text-xs px-2 py-0.5 text-gray-400 hover:text-white transition-colors
+                     disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      </div>
+      {deleteError && (
+        <p className="text-xs text-red-400">{deleteError}</p>
+      )}
+    </div>
+  )
+
+  // hover action bar - edit and delete for own messages (hidden during edit/delete)
+  const actionBar = isOwnMessage && !isEditing && !confirmingDelete ? (
     <div className="absolute -top-3 right-2 opacity-0 group-hover:opacity-100 transition-opacity
                     bg-gray-800 border border-gray-700 rounded shadow-lg flex">
       <button
+        onClick={startEdit}
         className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-l
                    transition-colors"
         title="Edit"
@@ -57,6 +215,11 @@ export default function MessageItem({ message, isGrouped }: MessageItemProps) {
         </svg>
       </button>
       <button
+        onClick={() => {
+          setConfirmingDelete(true)
+          setDeleteError(null)
+          setIsEditing(false)
+        }}
         className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-r
                    transition-colors"
         title="Delete"
@@ -73,12 +236,22 @@ export default function MessageItem({ message, isGrouped }: MessageItemProps) {
     </div>
   ) : null
 
+  // message content or edit area depending on state
+  const messageBody = isEditing ? editArea : (
+    <>
+      <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
+        {message.content}
+      </p>
+      {confirmingDelete && deleteConfirm}
+    </>
+  )
+
   if (isGrouped) {
     // condensed view - just content with small margin
     return (
       <div className="group relative hover:bg-gray-700/30 -mx-4 px-4 py-0.5">
         <div className="pl-16">
-          <p className="text-gray-200 text-sm leading-relaxed">{message.content}</p>
+          {messageBody}
         </div>
         {actionBar}
       </div>
@@ -121,10 +294,8 @@ export default function MessageItem({ message, isGrouped }: MessageItemProps) {
             )}
           </div>
 
-          {/* Message content */}
-          <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
-            {message.content}
-          </p>
+          {/* Message content or edit area */}
+          {messageBody}
         </div>
       </div>
       {actionBar}
