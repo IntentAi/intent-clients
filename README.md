@@ -25,12 +25,21 @@ npm run lint       # eslint
 
 ```
 web/src/
-  api/          REST client layer
-  gateway/      WebSocket (MessagePack binary protocol)
-  stores/       Zustand state management
-  components/   React components
-  pages/        Route pages
-  types/        TypeScript definitions
+  api/            REST client (auth, servers, channels, messages, members, invites)
+  gateway/        WebSocket (MessagePack binary protocol)
+  stores/         Zustand state (auth, servers, channels, messages, users)
+  components/
+    layout/       AppShell, ChannelSidebar
+    channels/     CreateChannelModal, ChannelSettingsModal
+    servers/      ServerSettingsModal
+    messages/     MessageItem, MessageInput
+    members/      MemberList
+    invites/      InviteModal
+    user/         UserBar
+    common/       Modal
+  pages/          Login, Register, Main, Join (invite accept)
+  types/          TypeScript definitions
+  utils/          Shared utilities (invite cache, etc.)
 ```
 
 ## Stack
