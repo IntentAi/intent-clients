@@ -7,7 +7,7 @@ import { create } from 'zustand'
 import type { CurrentUser } from '../types/user'
 import * as authApi from '../api/auth'
 import { gatewayClient } from '../gateway'
-import { clearInviteCache } from '../components/invites/InviteModal'
+import { clearInviteCache } from '../utils/inviteCache'
 
 interface AuthState {
   token: string | null

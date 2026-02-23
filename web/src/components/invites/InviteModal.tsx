@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Modal from '../common/Modal'
-import { createInvite, type Invite } from '../../api/invites'
+import { createInvite } from '../../api/invites'
+import { getCachedInvite, setCachedInvite } from '../../utils/inviteCache'
 
 interface InviteModalProps {
   isOpen: boolean
@@ -10,21 +11,8 @@ interface InviteModalProps {
   serverId: string
 }
 
-// cache invites per server so we don't mint a new code every time the modal opens
-const inviteCache = new Map<string, Invite>()
-
-function isCachedInviteValid(invite: Invite): boolean {
-  if (!invite.expires_at) return true
-  return new Date(invite.expires_at).getTime() > Date.now()
-}
-
-// call this on logout to avoid stale invites across sessions
-export function clearInviteCache() {
-  inviteCache.clear()
-}
-
 export default function InviteModal({ isOpen, onClose, serverId }: InviteModalProps) {
-  const [invite, setInvite] = useState<Invite | null>(null)
+  const [invite, setInvite] = useState<{ code: string; expires_at: string | null } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -51,8 +39,8 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
     }
 
     // reuse cached invite if it's still valid
-    const cached = inviteCache.get(serverId)
-    if (cached && isCachedInviteValid(cached)) {
+    const cached = getCachedInvite(serverId)
+    if (cached) {
       setInvite(cached)
       return
     }
@@ -66,7 +54,7 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
       try {
         const inv = await createInvite(targetServerId)
         if (!cancelled) {
-          inviteCache.set(targetServerId, inv)
+          setCachedInvite(targetServerId, inv)
           setInvite(inv)
         }
       } catch (err) {
