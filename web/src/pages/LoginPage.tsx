@@ -1,10 +1,11 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { login } from '../api/auth'
+import { useAuthStore } from '../stores/authStore'
 import { ApiError } from '../types/api'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const login = useAuthStore((s) => s.login)
   const [usernameOrEmail, setUsernameOrEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -16,9 +17,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const { token, user } = await login(usernameOrEmail, password)
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('user', JSON.stringify(user))
+      await login(usernameOrEmail, password)
       navigate('/')
     } catch (err) {
       if (err instanceof ApiError) {

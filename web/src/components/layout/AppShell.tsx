@@ -1,15 +1,18 @@
-// main 3-panel layout
+// main app layout - server sidebar, channel sidebar, messages, optional member list
 
+import { useState } from 'react'
 import ServerSidebar from './ServerSidebar'
 import ChannelSidebar from './ChannelSidebar'
 import MessageList from '../messages/MessageList'
 import MessageInput from '../messages/MessageInput'
+import MemberList from '../members/MemberList'
 import { useChannelStore } from '../../stores/channelStore'
 import { useServerStore } from '../../stores/serverStore'
 
 export default function AppShell() {
   const { selectedChannelId, channelsByServer } = useChannelStore()
   const { selectedServerId } = useServerStore()
+  const [showMembers, setShowMembers] = useState(false)
 
   // get selected channel for header
   const selectedChannel = selectedChannelId && selectedServerId
@@ -39,7 +42,10 @@ export default function AppShell() {
               <div className="ml-auto flex items-center gap-3">
                 {/* Header actions */}
                 <button
-                  className="p-2 text-gray-400 hover:text-white transition-colors rounded hover:bg-gray-700/50"
+                  onClick={() => setShowMembers(!showMembers)}
+                  className={`p-2 transition-colors rounded hover:bg-gray-700/50 ${
+                    showMembers ? 'text-white' : 'text-gray-400 hover:text-white'
+                  }`}
                   title="Members"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -94,6 +100,9 @@ export default function AppShell() {
           </div>
         )}
       </div>
+
+      {/* Right panel - Member list (toggled) */}
+      {showMembers && selectedServerId && <MemberList />}
     </div>
   )
 }

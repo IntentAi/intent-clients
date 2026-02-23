@@ -14,6 +14,7 @@ interface ChannelState {
   removeChannel: (serverId: string, channelId: string) => void
   updateChannel: (serverId: string, channelId: string, updates: Partial<Channel>) => void
   selectChannel: (channelId: string | null) => void
+  clearServerChannels: (serverId: string) => void
   getChannel: (serverId: string, channelId: string) => Channel | undefined
   getChannelsForServer: (serverId: string) => Channel[]
 }
@@ -89,6 +90,21 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
 
   selectChannel: (channelId: string | null) => {
     set({ selectedChannelId: channelId })
+  },
+
+  clearServerChannels: (serverId: string) => {
+    set((state) => {
+      const { [serverId]: _, ...rest } = state.channelsByServer
+      // if the selected channel belonged to this server, clear it
+      const serverChannels = state.channelsByServer[serverId]
+      const selectedGone = serverChannels && state.selectedChannelId
+        ? state.selectedChannelId in serverChannels
+        : false
+      return {
+        channelsByServer: rest,
+        selectedChannelId: selectedGone ? null : state.selectedChannelId,
+      }
+    })
   },
 
   getChannel: (serverId: string, channelId: string) => {

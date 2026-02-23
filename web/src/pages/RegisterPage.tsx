@@ -1,10 +1,11 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { register } from '../api/auth'
+import { useAuthStore } from '../stores/authStore'
 import { ApiError } from '../types/api'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const register = useAuthStore((s) => s.register)
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,9 +18,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const { token, user } = await register(username, email, password)
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('user', JSON.stringify(user))
+      await register(username, email, password)
       navigate('/')
     } catch (err) {
       if (err instanceof ApiError) {

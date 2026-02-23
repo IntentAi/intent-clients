@@ -86,11 +86,10 @@ async function request<T>(
     )
   }
 
-  // Handle 401 Unauthorized by redirecting to login
-  // This clears the invalid token and forces re-authentication
+  // Handle 401 Unauthorized — clear stale token and redirect to login
   if (response.status === 401) {
-    // TODO: When auth store is implemented, call logout action here
-    // For now, just redirect to login page
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('user')
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }

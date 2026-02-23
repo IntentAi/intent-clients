@@ -1,6 +1,6 @@
 // message api functions
 
-import { post, get } from './client'
+import { post, get, patch, del } from './client'
 import type { Message } from '../types/message'
 
 interface SendMessageRequest {
@@ -26,6 +26,19 @@ export async function getMessages(
     `/channels/${channelId}/messages?limit=${limit}`
   )
   return response.messages
+}
+
+// PATCH /messages/:messageId - edit a message
+export async function editMessage(
+  messageId: string,
+  content: string,
+): Promise<Message> {
+  return patch<Message>(`/messages/${messageId}`, { content })
+}
+
+// DELETE /messages/:messageId - delete a message
+export async function deleteMessage(messageId: string): Promise<void> {
+  await del(`/messages/${messageId}`)
 }
 
 // TODO: pagination with before/after cursors - add when we implement scroll-to-load-more
