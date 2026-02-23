@@ -6,6 +6,7 @@
 import { create } from 'zustand'
 import type { CurrentUser } from '../types/user'
 import * as authApi from '../api/auth'
+import { gatewayClient } from '../gateway'
 
 interface AuthState {
   token: string | null
@@ -20,9 +21,19 @@ interface AuthState {
   setUser: (user: CurrentUser | null) => void
 }
 
-// Hydrate from localStorage so auth survives page refresh
-const storedToken = localStorage.getItem('authToken')
-const storedUser = JSON.parse(localStorage.getItem('user') || 'null') as CurrentUser | null
+// Hydrate from localStorage so auth survives page refresh.
+// Both values are parsed together so corrupted user data also invalidates the token,
+// landing the user on the login screen instead of a broken authenticated state.
+let storedToken: string | null = localStorage.getItem('authToken')
+let storedUser: CurrentUser | null = null
+try {
+  storedUser = JSON.parse(localStorage.getItem('user') || 'null') as CurrentUser | null
+} catch {
+  // corrupted storage — drop everything so the user lands on login clean
+  storedToken = null
+  localStorage.removeItem('authToken')
+  localStorage.removeItem('user')
+}
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: storedToken,
@@ -45,6 +56,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       })
+      gatewayClient.connect()
     } catch (error) {
       set({ isLoading: false })
       throw error
@@ -66,6 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       })
+      gatewayClient.connect()
     } catch (error) {
       set({ isLoading: false })
       throw error
@@ -73,6 +86,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    gatewayClient.disconnect()
     // Clear localStorage
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
@@ -92,3 +106,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user })
   },
 }))
+
+// reconnect gateway when session is hydrated from localStorage on page load
+if (storedToken) {
+  gatewayClient.connect()
+}

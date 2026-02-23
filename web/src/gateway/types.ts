@@ -63,6 +63,9 @@ export interface Server {
 
   /** Member count */
   member_count: number
+
+  /** Creation timestamp (ISO 8601) */
+  created_at: string
 }
 
 /**

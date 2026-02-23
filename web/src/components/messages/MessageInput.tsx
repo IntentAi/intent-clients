@@ -2,22 +2,22 @@
 
 import { useState, useRef, KeyboardEvent } from 'react'
 import { useChannelStore } from '../../stores/channelStore'
+import { useServerStore } from '../../stores/serverStore'
 import { useMessageStore } from '../../stores/messageStore'
 import { sendMessage } from '../../api/messages'
 import type { Message } from '../../types/message'
 
 export default function MessageInput() {
   const { selectedChannelId, channelsByServer } = useChannelStore()
+  const { selectedServerId } = useServerStore()
   const { addMessage } = useMessageStore()
   const [content, setContent] = useState('')
   const [isSending, setIsSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // get selected channel name for placeholder
-  const selectedChannel = selectedChannelId
-    ? Object.values(channelsByServer)
-        .flatMap((channels) => Object.values(channels))
-        .find((ch) => ch.id === selectedChannelId)
+  // direct O(1) lookup instead of flatMapping all servers
+  const selectedChannel = selectedServerId && selectedChannelId
+    ? channelsByServer[selectedServerId]?.[selectedChannelId] ?? null
     : null
 
   const handleSubmit = async () => {

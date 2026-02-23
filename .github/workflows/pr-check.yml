@@ -3,15 +3,16 @@ name: PR Check
 on:
   pull_request:
     types: [opened, edited, synchronize]
+    branches: [dev, main]
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Check branch target
+      - name: Block PRs to main
         if: github.base_ref == 'main'
         run: |
-          echo "::error::PRs should target a phase branch (p2, p3) or dev, not main."
+          echo "::error::PRs should target dev, not main. Merge to main is done through dev."
           exit 1
 
       - name: Check PR title format
@@ -20,7 +21,7 @@ jobs:
         run: |
           if ! echo "$TITLE" | grep -qE '^(feat|fix|refactor|chore|docs|test|perf)(\(.+\))?: .+'; then
             echo "::error::PR title should follow conventional commits: type(scope): description"
-            echo "Examples: feat(invites): add creation modal, fix(auth): persist token on refresh"
+            echo "Examples: feat(members): add member list sidebar, fix(auth): persist token on refresh"
             exit 1
           fi
 
@@ -29,5 +30,5 @@ jobs:
           BODY: ${{ github.event.pull_request.body }}
         run: |
           if ! echo "$BODY" | grep -qiE '(close[sd]?|fix(e[sd])?|resolve[sd]?) #[0-9]+'; then
-            echo "::warning::PR body should reference an issue (e.g., Closes #13)"
+            echo "::warning::PR body should reference an issue (e.g., Closes #15)"
           fi

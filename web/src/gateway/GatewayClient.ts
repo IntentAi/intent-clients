@@ -63,11 +63,8 @@ class GatewayClient {
   /** Heartbeat timer ID */
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
 
-  /** Timestamp of last heartbeat sent */
-  private lastHeartbeatSent: number | null = null
-
-  /** Timestamp of last heartbeat ACK received */
-  private lastHeartbeatAck: number | null = null
+  /** Whether we're waiting for an ACK for the most recently sent heartbeat */
+  private awaitingAck = false
 
   /** Number of consecutive missed heartbeats */
   private missedHeartbeats = 0
@@ -332,7 +329,7 @@ class GatewayClient {
    * Records the timestamp and resets the missed heartbeat counter.
    */
   private handleHeartbeatAck(): void {
-    this.lastHeartbeatAck = Date.now()
+    this.awaitingAck = false
     this.missedHeartbeats = 0
     console.debug('[Gateway] Heartbeat ACK received')
   }
@@ -381,12 +378,8 @@ class GatewayClient {
 
     // Set up heartbeat interval
     this.heartbeatTimer = setInterval(() => {
-      // Check if we've missed too many heartbeats
-      // Compare timestamps: if we sent a heartbeat but haven't received ACK
-      if (
-        this.lastHeartbeatSent &&
-        this.lastHeartbeatSent > (this.lastHeartbeatAck || 0)
-      ) {
+      // If awaitingAck is still true the server hasn't ACKed the last heartbeat
+      if (this.awaitingAck) {
         this.missedHeartbeats++
         console.warn(
           '[Gateway] Missed heartbeat',
@@ -416,8 +409,7 @@ class GatewayClient {
       clearInterval(this.heartbeatTimer)
       this.heartbeatTimer = null
     }
-    this.lastHeartbeatSent = null
-    this.lastHeartbeatAck = null
+    this.awaitingAck = false
     this.missedHeartbeats = 0
   }
 
@@ -431,8 +423,7 @@ class GatewayClient {
     }
 
     this.send(payload)
-    this.lastHeartbeatSent = Date.now()
-    this.lastHeartbeatAck = null // Wait for ACK
+    this.awaitingAck = true
     console.debug('[Gateway] Heartbeat sent')
   }
 
