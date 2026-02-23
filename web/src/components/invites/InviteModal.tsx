@@ -1,6 +1,6 @@
 // modal for generating and sharing server invite links
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Modal from '../common/Modal'
 import { createInvite, type Invite } from '../../api/invites'
 
@@ -10,17 +10,38 @@ interface InviteModalProps {
   serverId: string
 }
 
+// cache invites per server so we don't mint a new code every time the modal opens
+const inviteCache = new Map<string, Invite>()
+
+function isCachedInviteValid(invite: Invite): boolean {
+  if (!invite.expires_at) return true
+  return new Date(invite.expires_at).getTime() > Date.now()
+}
+
 export default function InviteModal({ isOpen, onClose, serverId }: InviteModalProps) {
   const [invite, setInvite] = useState<Invite | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const prevServerId = useRef(serverId)
 
   useEffect(() => {
     if (!isOpen) {
+      setCopied(false)
+      return
+    }
+
+    // clear state if server changed
+    if (prevServerId.current !== serverId) {
       setInvite(null)
       setError(null)
-      setCopied(false)
+      prevServerId.current = serverId
+    }
+
+    // reuse cached invite if it's still valid
+    const cached = inviteCache.get(serverId)
+    if (cached && isCachedInviteValid(cached)) {
+      setInvite(cached)
       return
     }
 
@@ -30,7 +51,10 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
       setError(null)
       try {
         const inv = await createInvite(serverId)
-        if (!cancelled) setInvite(inv)
+        if (!cancelled) {
+          inviteCache.set(serverId, inv)
+          setInvite(inv)
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Failed to create invite')

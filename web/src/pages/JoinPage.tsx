@@ -1,10 +1,11 @@
 // join page - handles /invite/:code route
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { joinServer } from '../api/invites'
 import { useServerStore } from '../stores/serverStore'
 import { useAuthStore } from '../stores/authStore'
+import { ApiError } from '../types/api'
 
 export default function JoinPage() {
   const { code } = useParams<{ code: string }>()
@@ -14,6 +15,7 @@ export default function JoinPage() {
 
   const [status, setStatus] = useState<'loading' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!code || !isAuthenticated) return
@@ -29,7 +31,7 @@ export default function JoinPage() {
           name: result.server.name,
           owner_id: result.server.owner_id,
           icon_url: result.server.icon_hash,
-          member_count: 0,
+          member_count: 1,
           created_at: new Date().toISOString(),
         })
         selectServer(result.server.id)
@@ -38,19 +40,18 @@ export default function JoinPage() {
         if (cancelled) return
         setStatus('error')
 
-        if (err && typeof err === 'object' && 'status' in err) {
-          const apiErr = err as { status: number; message: string }
-          if (apiErr.status === 404) {
+        if (err instanceof ApiError) {
+          if (err.status === 404) {
             setError('This invite link is invalid or has been revoked.')
-          } else if (apiErr.status === 410) {
+          } else if (err.status === 410) {
             setError('This invite has expired or reached its usage limit.')
-          } else if (apiErr.status === 409) {
+          } else if (err.status === 409) {
             setError("You're already a member of this server.")
-            // still redirect after a moment
-            setTimeout(() => navigate('/', { replace: true }), 1500)
-            return
+            redirectTimer.current = setTimeout(() => {
+              if (!cancelled) navigate('/', { replace: true })
+            }, 1500)
           } else {
-            setError(apiErr.message || 'Something went wrong.')
+            setError(err.message || 'Something went wrong.')
           }
         } else {
           setError(err instanceof Error ? err.message : 'Failed to join server.')
@@ -59,7 +60,10 @@ export default function JoinPage() {
     }
 
     join()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      if (redirectTimer.current) clearTimeout(redirectTimer.current)
+    }
   }, [code, isAuthenticated, addServer, selectServer, navigate])
 
   if (!isAuthenticated) {
