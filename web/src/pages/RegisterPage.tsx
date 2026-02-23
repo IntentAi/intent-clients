@@ -1,10 +1,11 @@
 import { useState, FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { ApiError } from '../types/api'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const register = useAuthStore((s) => s.register)
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -19,7 +20,8 @@ export default function RegisterPage() {
 
     try {
       await register(username, email, password)
-      navigate('/')
+      const redirect = searchParams.get('redirect')
+      navigate(redirect && redirect.startsWith('/') ? redirect : '/')
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message)

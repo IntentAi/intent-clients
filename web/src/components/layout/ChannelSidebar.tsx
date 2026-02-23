@@ -8,6 +8,7 @@ import { getChannels } from '../../api/channels'
 import CreateChannelModal from '../channels/CreateChannelModal'
 import ChannelSettingsModal from '../channels/ChannelSettingsModal'
 import ServerSettingsModal from '../servers/ServerSettingsModal'
+import InviteModal from '../invites/InviteModal'
 import UserBar from '../user/UserBar'
 
 export default function ChannelSidebar() {
@@ -16,6 +17,7 @@ export default function ChannelSidebar() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isServerSettingsOpen, setIsServerSettingsOpen] = useState(false)
   const [settingsChannel, setSettingsChannel] = useState<Channel | null>(null)
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const selectedServer = selectedServerId ? servers[selectedServerId] : null
@@ -157,10 +159,14 @@ export default function ChannelSidebar() {
                       tabIndex={0}
                       className="p-1 hover:bg-gray-700 rounded cursor-pointer"
                       title="Invite"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setIsInviteModalOpen(true)
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.stopPropagation()
+                          setIsInviteModalOpen(true)
                         }
                       }}
                     >
@@ -248,6 +254,15 @@ export default function ChannelSidebar() {
           isOpen={!!settingsChannel}
           onClose={() => setSettingsChannel(null)}
           channel={settingsChannel}
+        />
+      )}
+
+      {/* Invite modal */}
+      {selectedServerId && (
+        <InviteModal
+          isOpen={isInviteModalOpen}
+          onClose={() => setIsInviteModalOpen(false)}
+          serverId={selectedServerId}
         />
       )}
     </div>

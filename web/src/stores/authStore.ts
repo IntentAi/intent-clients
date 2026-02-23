@@ -7,6 +7,7 @@ import { create } from 'zustand'
 import type { CurrentUser } from '../types/user'
 import * as authApi from '../api/auth'
 import { gatewayClient } from '../gateway'
+import { clearInviteCache } from '../utils/inviteCache'
 
 interface AuthState {
   token: string | null
@@ -87,7 +88,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     gatewayClient.disconnect()
-    // Clear localStorage
+    clearInviteCache()
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
 
