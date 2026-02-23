@@ -18,12 +18,24 @@ function isCachedInviteValid(invite: Invite): boolean {
   return new Date(invite.expires_at).getTime() > Date.now()
 }
 
+// call this on logout to avoid stale invites across sessions
+export function clearInviteCache() {
+  inviteCache.clear()
+}
+
 export default function InviteModal({ isOpen, onClose, serverId }: InviteModalProps) {
   const [invite, setInvite] = useState<Invite | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-  const prevServerId = useRef(serverId)
+  const prevServerId = useRef<string>(serverId)
+
+  // clean up the "Copied" feedback timeout on unmount
+  useEffect(() => {
+    if (!copied) return
+    const id = setTimeout(() => setCopied(false), 2000)
+    return () => clearTimeout(id)
+  }, [copied])
 
   useEffect(() => {
     if (!isOpen) {
@@ -46,13 +58,15 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
     }
 
     let cancelled = false
+    // capture serverId at call time so the cache write goes to the right key
+    const targetServerId = serverId
     const generate = async () => {
       setIsLoading(true)
       setError(null)
       try {
-        const inv = await createInvite(serverId)
+        const inv = await createInvite(targetServerId)
         if (!cancelled) {
-          inviteCache.set(serverId, inv)
+          inviteCache.set(targetServerId, inv)
           setInvite(inv)
         }
       } catch (err) {
@@ -68,6 +82,12 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
     return () => { cancelled = true }
   }, [isOpen, serverId])
 
+  const expiryText = (() => {
+    if (!invite?.expires_at) return null
+    const hours = Math.max(1, Math.round((new Date(invite.expires_at).getTime() - Date.now()) / 36e5))
+    return ` This link expires in ${hours} hour${hours === 1 ? '' : 's'}.`
+  })()
+
   const inviteUrl = invite
     ? `${window.location.origin}/invite/${invite.code}`
     : ''
@@ -77,9 +97,7 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
     try {
       await navigator.clipboard.writeText(inviteUrl)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     } catch {
-      // fallback for older browsers
       const input = document.createElement('input')
       input.value = inviteUrl
       document.body.appendChild(input)
@@ -87,7 +105,6 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
       document.execCommand('copy')
       document.body.removeChild(input)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     }
   }
 
@@ -121,7 +138,7 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
           <>
             <p className="text-sm text-gray-400">
               Share this link to invite others to the server.
-              {invite.expires_at && ' This link will expire in 24 hours.'}
+              {expiryText}
             </p>
 
             <div className="flex gap-2">
@@ -132,7 +149,7 @@ export default function InviteModal({ isOpen, onClose, serverId }: InviteModalPr
                 className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded
                          text-white text-sm select-all
                          focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                onClick={(e) => (e.target as HTMLInputElement).select()}
+                onClick={(e) => e.currentTarget.select()}
               />
               <button
                 onClick={handleCopy}
