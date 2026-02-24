@@ -17,6 +17,7 @@ interface MessageState {
   setMessages: (channelId: string, messages: Message[]) => void
   addMessage: (message: Message) => void
   prependMessages: (channelId: string, messages: Message[]) => void
+  replaceMessage: (channelId: string, oldId: string, message: Message) => void
   removeMessage: (channelId: string, messageId: string) => void
   updateMessage: (channelId: string, messageId: string, updates: Partial<Message>) => void
   getMessagesForChannel: (channelId: string) => Message[]
@@ -40,25 +41,18 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       {} as Record<string, Message>,
     )
 
-    set((state) => ({
-      messagesByChannel: {
-        ...state.messagesByChannel,
-        [channelId]: messagesMap,
-      },
-    }))
-
-    // Update oldest message ID if messages exist
-    if (messages.length > 0) {
-      const sortedMessages = [...messages].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      )
-      set((state) => ({
-        oldestMessageId: {
-          ...state.oldestMessageId,
-          [channelId]: sortedMessages[0].id,
-        },
-      }))
-    }
+    set((state) => {
+      const update: Partial<MessageState> = {
+        messagesByChannel: { ...state.messagesByChannel, [channelId]: messagesMap },
+      }
+      if (messages.length > 0) {
+        const oldest = [...messages].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        )[0]
+        update.oldestMessageId = { ...state.oldestMessageId, [channelId]: oldest.id }
+      }
+      return update
+    })
   },
 
   addMessage: (message: Message) => {
@@ -76,48 +70,46 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     })
   },
 
+  // atomically swap a temp optimistic message for the real one — no render between remove and add
+  replaceMessage: (channelId: string, oldId: string, message: Message) => {
+    set((state) => {
+      const channelMessages = state.messagesByChannel[channelId]
+      if (!channelMessages) return state
+      const { [oldId]: _, ...rest } = channelMessages
+      return {
+        messagesByChannel: {
+          ...state.messagesByChannel,
+          [channelId]: { ...rest, [message.id]: message },
+        },
+      }
+    })
+  },
+
   prependMessages: (channelId: string, messages: Message[]) => {
     if (messages.length === 0) {
-      // No more messages, mark as reached start
       set((state) => ({
-        hasReachedStart: {
-          ...state.hasReachedStart,
-          [channelId]: true,
-        },
+        hasReachedStart: { ...state.hasReachedStart, [channelId]: true },
       }))
       return
     }
 
-    set((state) => {
-      const channelMessages = state.messagesByChannel[channelId] || {}
-      const newMessages = messages.reduce(
-        (acc, message) => {
-          acc[message.id] = message
-          return acc
-        },
-        {} as Record<string, Message>,
-      )
-
-      return {
-        messagesByChannel: {
-          ...state.messagesByChannel,
-          [channelId]: {
-            ...newMessages,
-            ...channelMessages,
-          },
-        },
-      }
-    })
-
-    // Update oldest message ID
-    const sortedMessages = [...messages].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    )
-    set((state) => ({
-      oldestMessageId: {
-        ...state.oldestMessageId,
-        [channelId]: sortedMessages[0].id,
+    const newMessages = messages.reduce(
+      (acc, message) => {
+        acc[message.id] = message
+        return acc
       },
+      {} as Record<string, Message>,
+    )
+    const oldest = [...messages].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    )[0]
+
+    set((state) => ({
+      messagesByChannel: {
+        ...state.messagesByChannel,
+        [channelId]: { ...newMessages, ...state.messagesByChannel[channelId] },
+      },
+      oldestMessageId: { ...state.oldestMessageId, [channelId]: oldest.id },
     }))
   },
 
