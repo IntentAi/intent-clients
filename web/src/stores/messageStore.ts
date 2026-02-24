@@ -21,9 +21,7 @@ interface MessageState {
   removeMessage: (channelId: string, messageId: string) => void
   updateMessage: (channelId: string, messageId: string, updates: Partial<Message>) => void
   getMessagesForChannel: (channelId: string) => Message[]
-  setOldestMessageId: (channelId: string, messageId: string | null) => void
   getOldestMessageId: (channelId: string) => string | null
-  markChannelStart: (channelId: string) => void
   hasReachedChannelStart: (channelId: string) => boolean
 }
 
@@ -44,6 +42,8 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     set((state) => {
       const update: Partial<MessageState> = {
         messagesByChannel: { ...state.messagesByChannel, [channelId]: messagesMap },
+        // clear pagination state when a channel's messages are reset
+        hasReachedStart: { ...state.hasReachedStart, [channelId]: false },
       }
       if (messages.length > 0) {
         const oldest = [...messages].sort(
@@ -153,26 +153,8 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     )
   },
 
-  setOldestMessageId: (channelId: string, messageId: string | null) => {
-    set((state) => ({
-      oldestMessageId: {
-        ...state.oldestMessageId,
-        [channelId]: messageId,
-      },
-    }))
-  },
-
   getOldestMessageId: (channelId: string) => {
     return get().oldestMessageId[channelId] || null
-  },
-
-  markChannelStart: (channelId: string) => {
-    set((state) => ({
-      hasReachedStart: {
-        ...state.hasReachedStart,
-        [channelId]: true,
-      },
-    }))
   },
 
   hasReachedChannelStart: (channelId: string) => {
@@ -186,25 +168,19 @@ gatewayClient.on<{ message: Message }>(MESSAGE_CREATE, (payload) => {
   const channelMessages = messagesByChannel[payload.message.channel_id]
 
   // skip if we already have this message (from optimistic update)
-  if (channelMessages && channelMessages[payload.message.id]) {
-    console.log('[MessageStore] MESSAGE_CREATE: already exists, skipping')
-    return
-  }
+  if (channelMessages && channelMessages[payload.message.id]) return
 
-  console.log('[MessageStore] MESSAGE_CREATE: adding message to', payload.message.channel_id)
   addMessage(payload.message)
 })
 
 // handle MESSAGE_UPDATE events
 gatewayClient.on<{ message: Message }>(MESSAGE_UPDATE, (payload) => {
   const { updateMessage } = useMessageStore.getState()
-  console.log('[MessageStore] MESSAGE_UPDATE: updating message', payload.message.id)
   updateMessage(payload.message.channel_id, payload.message.id, payload.message)
 })
 
 // handle MESSAGE_DELETE events
 gatewayClient.on<{ id: string; channel_id: string }>(MESSAGE_DELETE, (payload) => {
   const { removeMessage } = useMessageStore.getState()
-  console.log('[MessageStore] MESSAGE_DELETE: removing message', payload.id)
   removeMessage(payload.channel_id, payload.id)
 })
