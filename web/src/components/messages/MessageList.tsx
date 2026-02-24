@@ -26,6 +26,10 @@ export default function MessageList() {
 
   const messages = selectedChannelId ? getMessagesForChannel(selectedChannelId) : []
 
+  // derived boolean — avoids putting the entire messagesByChannel object in effect deps,
+  // which would re-run on any new message in any channel
+  const hasMessagesLoaded = selectedChannelId != null && !!messagesByChannel[selectedChannelId]
+
   // fetch messages when channel changes
   useEffect(() => {
     if (!selectedChannelId) return
@@ -33,7 +37,7 @@ export default function MessageList() {
     // reset load-more lock on channel switch
     isFetchingMoreRef.current = false
 
-    if (messagesByChannel[selectedChannelId]) {
+    if (hasMessagesLoaded) {
       scrollToBottom()
       return
     }
@@ -62,7 +66,7 @@ export default function MessageList() {
     return () => {
       cancelled = true
     }
-  }, [selectedChannelId, messagesByChannel, setMessages])
+  }, [selectedChannelId, hasMessagesLoaded, setMessages])
 
   // auto-scroll on new messages
   useEffect(() => {
