@@ -8,18 +8,30 @@ import MessageItem from './MessageItem'
 
 export default function MessageList() {
   const { selectedChannelId } = useChannelStore()
-  const { messagesByChannel, setMessages, getMessagesForChannel } = useMessageStore()
+  const {
+    messagesByChannel,
+    setMessages,
+    prependMessages,
+    getMessagesForChannel,
+    getOldestMessageId,
+    hasReachedChannelStart,
+  } = useMessageStore()
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [showNewMessages, setShowNewMessages] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const prevMessageCountRef = useRef(0)
   const isNearBottomRef = useRef(true)
+  const isFetchingMoreRef = useRef(false)
 
   const messages = selectedChannelId ? getMessagesForChannel(selectedChannelId) : []
 
   // fetch messages when channel changes
   useEffect(() => {
     if (!selectedChannelId) return
+
+    // reset load-more lock on channel switch
+    isFetchingMoreRef.current = false
 
     if (messagesByChannel[selectedChannelId]) {
       scrollToBottom()
@@ -64,7 +76,40 @@ export default function MessageList() {
     prevMessageCountRef.current = messages.length
   }, [messages.length])
 
-  // track scroll position
+  // fetch older messages using the oldest known message ID as cursor
+  const loadMoreMessages = async () => {
+    if (!selectedChannelId) return
+    if (isFetchingMoreRef.current) return
+    if (hasReachedChannelStart(selectedChannelId)) return
+
+    const before = getOldestMessageId(selectedChannelId)
+    if (!before) return
+
+    isFetchingMoreRef.current = true
+    setIsLoadingMore(true)
+
+    // snapshot scroll position so we can restore it after prepending
+    const container = scrollRef.current
+    const scrollHeightBefore = container?.scrollHeight ?? 0
+
+    try {
+      const older = await getMessages(selectedChannelId, 50, before)
+      prependMessages(selectedChannelId, older)
+
+      // restore scroll position — shift by how much height was added at top
+      if (container) {
+        const added = container.scrollHeight - scrollHeightBefore
+        container.scrollTop += added
+      }
+    } catch (err) {
+      console.error('failed to load older messages:', err)
+    } finally {
+      setIsLoadingMore(false)
+      isFetchingMoreRef.current = false
+    }
+  }
+
+  // track scroll position and trigger pagination near top
   const handleScroll = () => {
     if (!scrollRef.current) return
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
@@ -72,6 +117,9 @@ export default function MessageList() {
     isNearBottomRef.current = distanceFromBottom < 100
     if (isNearBottomRef.current) {
       setShowNewMessages(false)
+    }
+    if (scrollTop < 100) {
+      loadMoreMessages()
     }
   }
 
@@ -139,6 +187,18 @@ export default function MessageList() {
         onScroll={handleScroll}
         className="absolute inset-0 overflow-y-auto px-4 py-4"
       >
+        {/* top-of-history markers */}
+        {selectedChannelId && hasReachedChannelStart(selectedChannelId) && (
+          <div className="text-center py-4 mb-2">
+            <p className="text-gray-500 text-xs">Beginning of conversation</p>
+          </div>
+        )}
+        {isLoadingMore && (
+          <div className="text-center py-3">
+            <p className="text-gray-500 text-xs">Loading older messages...</p>
+          </div>
+        )}
+
         {groupedMessages.map(({ message, isGrouped }) => (
           <MessageItem key={message.id} message={message} isGrouped={isGrouped} />
         ))}

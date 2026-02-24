@@ -18,12 +18,16 @@ export async function sendMessage(channelId: string, content: string): Promise<M
 }
 
 // GET /channels/:channelId/messages - fetch message history
+// pass `before` to paginate backwards from a given message ID
 export async function getMessages(
   channelId: string,
-  limit: number = 50
+  limit: number = 50,
+  before?: string,
 ): Promise<Message[]> {
+  const params = new URLSearchParams({ limit: String(limit) })
+  if (before) params.set('before', before)
   const response = await get<GetMessagesResponse>(
-    `/channels/${channelId}/messages?limit=${limit}`
+    `/channels/${channelId}/messages?${params.toString()}`
   )
   return response.messages
 }
@@ -41,4 +45,3 @@ export async function deleteMessage(messageId: string): Promise<void> {
   await del(`/messages/${messageId}`)
 }
 
-// TODO: pagination with before/after cursors - add when we implement scroll-to-load-more
