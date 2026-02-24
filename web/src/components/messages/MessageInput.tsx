@@ -23,6 +23,8 @@ export default function MessageInput() {
   const handleSubmit = async () => {
     if (!content.trim() || !selectedChannelId || isSending) return
 
+    // capture channel at send time — selectedChannelId may change while request is in flight
+    const channelId = selectedChannelId
     const messageContent = content.trim()
     setContent('')
     setIsSending(true)
@@ -34,7 +36,7 @@ export default function MessageInput() {
     const tempId = `temp-${Date.now()}`
     const tempMessage: Message = {
       id: tempId,
-      channel_id: selectedChannelId,
+      channel_id: channelId,
       author: {
         id: 'temp',
         username: 'You',
@@ -49,16 +51,19 @@ export default function MessageInput() {
 
     try {
       addMessage(tempMessage)
-      const sentMessage = await sendMessage(selectedChannelId, messageContent)
+      const sentMessage = await sendMessage(channelId, messageContent)
 
-      const { removeMessage } = useMessageStore.getState()
-      removeMessage(selectedChannelId, tempId)
-      addMessage(sentMessage)
+      // atomic swap — no render gap between remove and add
+      const { replaceMessage } = useMessageStore.getState()
+      replaceMessage(channelId, tempId, sentMessage)
     } catch (err) {
       console.error('failed to send message:', err)
       const { removeMessage } = useMessageStore.getState()
-      removeMessage(selectedChannelId, tempId)
-      setContent(messageContent)
+      removeMessage(channelId, tempId)
+      // only restore input if the user is still on the same channel
+      if (useChannelStore.getState().selectedChannelId === channelId) {
+        setContent(messageContent)
+      }
     } finally {
       setIsSending(false)
     }

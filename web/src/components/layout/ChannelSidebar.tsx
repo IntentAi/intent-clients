@@ -27,10 +27,13 @@ export default function ChannelSidebar() {
       )
     : []
 
+  // derived boolean — avoids putting the entire channelsByServer object in effect deps,
+  // which would re-run on any channel mutation across any server
+  const hasChannelsLoaded = selectedServerId != null && !!channelsByServer[selectedServerId]
+
   // fetch channels when server is selected
   useEffect(() => {
-    if (!selectedServerId) return
-    if (channelsByServer[selectedServerId]) return
+    if (!selectedServerId || hasChannelsLoaded) return
 
     let cancelled = false
     const fetchServerChannels = async () => {
@@ -55,7 +58,7 @@ export default function ChannelSidebar() {
     return () => {
       cancelled = true
     }
-  }, [selectedServerId, channelsByServer, setChannels])
+  }, [selectedServerId, hasChannelsLoaded, setChannels])
 
   if (!selectedServer) {
     return (
